@@ -80,7 +80,8 @@
   <p id="status" style="margin-top:15px;color:#0f0"></p>
 
   <script>
-    const API = ''; // Railway despliega en / → vacío
+    // === URL DEL BACKEND EN RAILWAY (PUERTO 8080) ===
+    const API = 'https://topvibes-production.up.railway.app:8080';
 
     // CARGAR DATOS AL ABRIR
     async function loadData() {
@@ -88,33 +89,22 @@
         const res = await fetch(API + '/api/data');
         const data = await res.json();
 
-        // Hero
         $('#heroTitle').value = data.hero?.title || '';
         $('#heroDesc').value = data.hero?.desc || '';
-
-        // About
         $('#aboutTitle').value = data.about?.title || '';
         $('#aboutDesc1').value = data.about?.desc1 || '';
         $('#aboutDesc2').value = data.about?.desc2 || '';
-
-        // Telegram
         $('#telegramTitle').value = data.telegram?.title || '';
         $('#telegramDesc').value = data.telegram?.desc || '';
         $('#telegramLink').value = data.telegram?.link || '';
-
-        // Camisetas
         $('#shirtsTitle').value = data.shirtsTitle || '';
         const list = $('#shirtsList');
         list.innerHTML = '';
         (data.shirts || []).forEach((s, i) => addShirtToList(s, i));
-
-        // Descuentos
         $('#discountsTitle').value = data.discounts?.title || '';
         $('#discountsDesc').value = data.discounts?.desc || '';
         $('#discountsCodes').value = (data.discounts?.validCodes || []).join(', ');
         $('#newPrice').value = data.discounts?.newPrice || '';
-
-        // Footer
         $('#footerYear').value = data.footer?.year || '';
         $('#footerIg').value = data.footer?.ig || '';
         $('#footerTt').value = data.footer?.tt || '';
@@ -163,7 +153,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        $('#status').textContent = '¡Guardado! index.html se actualizó en GitHub Pages.';
+        $('#status').textContent = '¡Guardado! index.html se actualizó.';
         $('#status').style.color = '#0f0';
       } catch (e) {
         $('#status').textContent = 'Error: ' + e.message;
@@ -199,10 +189,8 @@
 
     function addShirtToList(s, i) { addShirt(s); }
 
-    // UTIL
     function $(s) { return document.querySelector(s) || document.getElementById(s.replace('#','')); }
 
-    // CARGAR AL INICIO
     window.onload = loadData;
   </script>
 </body>
