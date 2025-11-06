@@ -18,10 +18,6 @@
     .add-shirt{background:#333;color:#0f0;border:none;cursor:pointer;margin-top:5px}
     .remove-shirt{background:#900;color:#fff;border:none;cursor:pointer;margin-left:5px}
     .photo-inputs input{width:calc(100% - 10px);margin:2px}
-    @media(max-width:600px){
-      input,textarea,button{font-size:0.9rem}
-      .section{padding:10px}
-    }
   </style>
 </head>
 <body>
@@ -80,10 +76,8 @@
   <p id="status" style="margin-top:15px;color:#0f0"></p>
 
   <script>
-    // === URL DEL BACKEND SIN PUERTO (Railway usa 443 para HTTPS) ===
-    const API = 'https://topvibes-production.up.railway.app';
+    const API = 'https://topvibes-production.up.railway.app'; // CAMBIA SI ES OTRO DOMINIO
 
-    // CARGAR DATOS
     async function loadData() {
       try {
         const res = await fetch(API + '/api/data');
@@ -99,9 +93,8 @@
         $('#telegramDesc').value = data.telegram?.desc || '';
         $('#telegramLink').value = data.telegram?.link || '';
         $('#shirtsTitle').value = data.shirtsTitle || '';
-        const list = $('#shirtsList');
-        list.innerHTML = '';
-        (data.shirts || []).forEach((s, i) => addShirtToList(s, i));
+        $('#shirtsList').innerHTML = '';
+        (data.shirts || []).forEach(addShirt);
         $('#discountsTitle').value = data.discounts?.title || '';
         $('#discountsDesc').value = data.discounts?.desc || '';
         $('#discountsCodes').value = (data.discounts?.validCodes || []).join(', ');
@@ -118,7 +111,6 @@
       }
     }
 
-    // GUARDAR TODO
     async function saveAll() {
       const payload = {
         hero: { title: $('#heroTitle').value, desc: $('#heroDesc').value },
@@ -137,9 +129,7 @@
           wallapop: el.querySelector('.wallapop').value,
           size: el.querySelector('.size').value,
           pdf: el.querySelector('.pdf').value,
-          photos: Array.from(el.querySelectorAll('.photo-inputs input'))
-            .map(i => i.value.trim())
-            .filter(Boolean)
+          photos: Array.from(el.querySelectorAll('.photo-inputs input')).map(i => i.value.trim()).filter(Boolean)
         })),
         discounts: {
           title: $('#discountsTitle').value,
@@ -157,7 +147,7 @@
           body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        $('#status').textContent = '¡Guardado! index.html actualizado.';
+        $('#status').textContent = '¡Guardado! index.html actualizado en GitHub Pages.';
         $('#status').style.color = '#0f0';
       } catch (e) {
         $('#status').textContent = 'Error: ' + e.message;
@@ -165,7 +155,6 @@
       }
     }
 
-    // CAMISETAS
     function addShirt(s = {}) {
       const list = $('#shirtsList');
       const div = document.createElement('div');
@@ -190,8 +179,6 @@
       `;
       list.appendChild(div);
     }
-
-    function addShirtToList(s) { addShirt(s); }
 
     function $(s) { return document.getElementById(s.replace('#','')); }
 
