@@ -1,8 +1,6 @@
-// server.js - FINAL 100% FUNCIONAL con index.html por VARIABLES
-// → Usa {{PLACEHOLDERS}} en index.html
-// → SOLO ACTUALIZA el archivo existente (nunca crea)
-// → PostgreSQL + Railway + GitHub Pages
-// → Todo en RAÍZ del repo topvibes
+// server.js - FINAL 100% FUNCIONAL
+// Puerto 8080 (backend) | PostgreSQL en 3000 (interno)
+// Tabla se crea sola | Datos se cargan en admin | index.html se actualiza
 
 const express = require('express');
 const { Client } = require('pg');
@@ -15,16 +13,16 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-const PORT = process.env.PORT || 3000;
+const PORT = 8080; // ← PUERTO DEL BACKEND
 
-// === POSTGRESQL ===
+// === POSTGRESQL (puerto 3000 interno en Railway) ===
 const client = new Client({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 client.connect()
-  .then(() => console.log('Conectado a PostgreSQL'))
+  .then(() => console.log('Conectado a PostgreSQL (puerto 3000 interno)'))
   .catch(err => console.error('Error DB:', err));
 
 // === GITHUB ===
@@ -34,7 +32,7 @@ const REPO = process.env.GITHUB_REPO;
 const BRANCH = process.env.GITHUB_BRANCH || 'main';
 const FILE_PATH = 'index.html';
 
-// === PLANTILLA (index.html con {{PLACEHOLDERS}}) ===
+// === PLANTILLA index.html ===
 const TEMPLATE_PATH = path.join(__dirname, 'index.html');
 let siteTemplate = '';
 try {
@@ -45,7 +43,7 @@ try {
   process.exit(1);
 }
 
-// === GENERAR HTML (reemplaza variables) ===
+// === GENERAR HTML ===
 function generateSiteHTML(data) {
   let html = siteTemplate;
   const r = (k, v) => { html = html.replace(new RegExp(`{{${k}}}`, 'g'), v || ''); };
@@ -70,7 +68,7 @@ function generateSiteHTML(data) {
   return html;
 }
 
-// === ACTUALIZAR index.html EN GITHUB (SOLO ACTUALIZA) ===
+// === ACTUALIZAR index.html EN GITHUB ===
 async function updateGitHubPages(html) {
   try {
     const { data } = await octokit.repos.getContent({
@@ -83,14 +81,13 @@ async function updateGitHubPages(html) {
       sha: data.sha,
       branch: BRANCH
     });
-    console.log('index.html ACTUALIZADO en GitHub');
+    console.log('index.html ACTUALIZADO');
   } catch (err) {
-    console.error('ERROR: index.html no existe. Crea uno manualmente en la raíz.');
-    console.error('→ Sube el index.html con {{PLACEHOLDERS}} y vuelve a desplegar.');
+    console.error('ERROR: index.html no existe. Sube uno manualmente.');
   }
 }
 
-// === INICIALIZAR DB + DATOS (solo si no existen) ===
+// === INICIALIZAR DB + TABLA + DATOS ===
 async function initDatabase() {
   try {
     await client.query(`
@@ -114,42 +111,9 @@ async function initDatabase() {
         telegram: { title: 'Únete a Telegram', desc: 'Novedades, descuentos y drops exclusivos.', link: 'https://t.me/+gOPcalQ283ZmMjdk' },
         shirtsTitle: 'Camisetas de Artistas',
         shirts: [
-          {
-            id: 'travis-scott', name: 'Travis Scott', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/jebq36.jpg',
-            desc: 'Silueta con collage de álbumes', vinted1: 'https://vinted.com/items/7129804695', vinted2: 'https://vinted.com/items/7129752813',
-            wallapop: 'https://wallapop.com/item/camiseta-travis-scott-inspirada-en-albumes-1177538052', photos: ['https://files.catbox.moe/jebq36.jpg', 'https://files.catbox.moe/ax2bgv.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf'
-          },
-          {
-            id: 'kanye-west', name: 'Kanye West', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/n9gr3b.jpg',
-            desc: 'Silueta icónica de Kanye', vinted1: 'https://vinted.com/items/7129862787', vinted2: 'https://vinted.com/items/7129981776',
-            wallapop: 'https://wallapop.com/item/camiseta-kanye-west-negra-1177553048', photos: ['https://files.catbox.moe/n9gr3b.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf'
-          },
-          {
-            id: 'quevedo', name: 'Quevedo', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/mq4dbc.jpg',
-            desc: 'Estampado con barra censurada', vinted1: 'https://vinted.com/items/7129833371', vinted2: 'https://vinted.com/items/7130620834',
-            wallapop: 'https://wallapop.com/item/camiseta-quevedo-negra-la-ultima-barra-censurada-1177553748', photos: ['https://files.catbox.moe/mq4dbc.jpg'], size: 'L', pdf: 'https://files.catbox.moe/u93uht.pdf'
-          },
-          {
-            id: 'playboi-carti', name: 'Playboi Carti', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/ghb8e4.jpg',
-            desc: 'Estética trap vanguardista', vinted1: 'https://vinted.com/items/7129847714', vinted2: 'https://vinted.com/items/7130320619',
-            wallapop: 'https://wallapop.com/item/playboi-carti-merch-camiseta-negra-1177554656', photos: ['https://files.catbox.moe/ghb8e4.jpg'], size: 'L', pdf: 'https://files.catbox.moe/u93uht.pdf'
-          },
-          {
-            id: 'kendrick-lamar', name: 'Kendrick Lamar', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/sa521h.jpg',
-            desc: 'Diseño minimalista con letras', vinted1: 'https://vinted.com/items/7129831487', vinted2: 'https://vinted.com/items/7130241869',
-            wallapop: 'https://wallapop.com/item/camiseta-kendrick-lamar-negra-1177552441', photos: ['https://files.catbox.moe/sa521h.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf'
-          },
-          {
-            id: 'drake', name: 'Drake', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/3b9llp.jpg',
-            desc: 'Firma de Drake en blanco', vinted1: 'https://vinted.com/items/7129822256', vinted2: 'https://vinted.com/items/7130074286',
-            wallapop: 'https://wallapop.com/item/camiseta-drake-con-firma-1177551844', photos: ['https://files.catbox.moe/3b9llp.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf'
-          }
+          { id: 'travis-scott', name: 'Travis Scott', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/jebq36.jpg', desc: 'Silueta con collage de álbumes', vinted1: 'https://vinted.com/items/7129804695', vinted2: 'https://vinted.com/items/7129752813', wallapop: 'https://wallapop.com/item/abc123', photos: ['https://files.catbox.moe/jebq36.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf' }
         ],
-        discounts: {
-          oldPrice: '24.99', newPrice: '19.99',
-          validCodes: ['M4S1T','BURRO','DROP003','SPRINT','TOP10','VIP2025','#DROP003VIENEDURO','TOPVIBES25','CAST','INFLUENCERS','CHAPARRO','M7D5Z'],
-          title: 'Canjea tu Código de Descuento', desc: 'Ingresa tu código exclusivo para el Drop #003 y completa el formulario para recibir tu descuento.'
-        },
+        discounts: { oldPrice: '24.99', newPrice: '19.99', validCodes: ['M4S1T','BURRO','DROP003'], title: 'Código de Descuento', desc: 'Ingresa tu código para el drop #003' },
         footer: { year: '2025', ig: 'https://instagram.com/topvibeess', tt: 'https://tiktok.com/@topvibeess', yt: 'https://youtube.com/@topvibeess' }
       };
 
@@ -196,7 +160,10 @@ app.post('/api/update-shirts', (req, res) => updateSection(c => ({ ...c, shirtsT
 app.post('/api/update-discounts', (req, res) => updateSection(c => ({ ...c, discounts: req.body.discounts }), res));
 app.post('/api/update-footer', (req, res) => updateSection(c => ({ ...c, footer: req.body.footer }), res));
 
-// === INICIAR ===
+// === RUTA NUEVA: GUARDAR TODO ===
+app.post('/api/update-all', (req, res) => updateSection(() => req.body, res));
+
+// === INICIAR EN PUERTO 8080 ===
 app.listen(PORT, async () => {
   await initDatabase();
   console.log(`TOPVIBES backend ON → puerto ${PORT}`);
