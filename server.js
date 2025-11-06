@@ -1,7 +1,8 @@
-// server.js - Versión FINAL 100% FUNCIONAL con PostgreSQL
-// Tablas se crean SOLAS, datos iniciales se insertan SOLOS
-// Actualiza GitHub Pages automáticamente
-// Todo en RAÍZ del repo topvibes
+// server.js - FINAL 100% FUNCIONAL con index.html por VARIABLES
+// → Usa {{PLACEHOLDERS}} en index.html
+// → SOLO ACTUALIZA el archivo existente (nunca crea)
+// → PostgreSQL + Railway + GitHub Pages
+// → Todo en RAÍZ del repo topvibes
 
 const express = require('express');
 const { Client } = require('pg');
@@ -24,7 +25,7 @@ const client = new Client({
 
 client.connect()
   .then(() => console.log('Conectado a PostgreSQL'))
-  .catch(err => console.error('Error conectando a DB:', err));
+  .catch(err => console.error('Error DB:', err));
 
 // === GITHUB ===
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
@@ -33,18 +34,18 @@ const REPO = process.env.GITHUB_REPO;
 const BRANCH = process.env.GITHUB_BRANCH || 'main';
 const FILE_PATH = 'index.html';
 
-// === PLANTILLA ===
-const TEMPLATE_PATH = path.join(__dirname, 'template.html');
+// === PLANTILLA (index.html con {{PLACEHOLDERS}}) ===
+const TEMPLATE_PATH = path.join(__dirname, 'index.html');
 let siteTemplate = '';
 try {
   siteTemplate = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
-  console.log('template.html cargado');
+  console.log('index.html (plantilla) cargado');
 } catch (err) {
-  console.error('ERROR: template.html no encontrado en la raíz');
+  console.error('ERROR: index.html no encontrado en la raíz');
   process.exit(1);
 }
 
-// === GENERAR HTML ===
+// === GENERAR HTML (reemplaza variables) ===
 function generateSiteHTML(data) {
   let html = siteTemplate;
   const r = (k, v) => { html = html.replace(new RegExp(`{{${k}}}`, 'g'), v || ''); };
@@ -60,6 +61,8 @@ function generateSiteHTML(data) {
   r('SHIRTS_DATA', JSON.stringify(data.shirts || []));
   r('VALID_CODES', JSON.stringify(data.discounts?.validCodes || []));
   r('NEW_PRICE', data.discounts?.newPrice);
+  r('DISCOUNTS_TITLE', data.discounts?.title);
+  r('DISCOUNTS_DESC', data.discounts?.desc);
   r('COPYRIGHT_YEAR', data.footer?.year);
   r('IG_LINK', data.footer?.ig);
   r('TT_LINK', data.footer?.tt);
@@ -67,44 +70,40 @@ function generateSiteHTML(data) {
   return html;
 }
 
-// === SUBIR A GITHUB ===
+// === ACTUALIZAR index.html EN GITHUB (SOLO ACTUALIZA) ===
 async function updateGitHubPages(html) {
   try {
-    const { data } = await octokit.repos.getContent({ owner: OWNER, repo: REPO, path: FILE_PATH, branch: BRANCH });
-    await octokit.repos.createOrUpdateFileContents({
-      owner: OWNER, repo: REPO, path: FILE_PATH, message: `Update - ${new Date().toISOString()}`,
-      content: Buffer.from(html).toString('base64'), sha: data.sha, branch: BRANCH
+    const { data } = await octokit.repos.getContent({
+      owner: OWNER, repo: REPO, path: FILE_PATH, branch: BRANCH
     });
-    console.log('index.html actualizado en GitHub');
+    await octokit.repos.createOrUpdateFileContents({
+      owner: OWNER, repo: REPO, path: FILE_PATH,
+      message: `Update site - ${new Date().toISOString()}`,
+      content: Buffer.from(html).toString('base64'),
+      sha: data.sha,
+      branch: BRANCH
+    });
+    console.log('index.html ACTUALIZADO en GitHub');
   } catch (err) {
-    if (err.status === 404) {
-      await octokit.repos.createOrUpdateFileContents({
-        owner: OWNER, repo: REPO, path: FILE_PATH, message: `Create index.html - ${new Date().toISOString()}`,
-        content: Buffer.from(html).toString('base64'), branch: BRANCH
-      });
-      console.log('index.html creado en GitHub');
-    } else {
-      console.error('GitHub Error:', err.message);
-    }
+    console.error('ERROR: index.html no existe. Crea uno manualmente en la raíz.');
+    console.error('→ Sube el index.html con {{PLACEHOLDERS}} y vuelve a desplegar.');
   }
 }
 
-// === INICIALIZAR DB + TABLA + DATOS (SE CREA SOLA) ===
+// === INICIALIZAR DB + DATOS (solo si no existen) ===
 async function initDatabase() {
   try {
-    // Crea tabla SOLA
     await client.query(`
       CREATE TABLE IF NOT EXISTS site_data (
         id SERIAL PRIMARY KEY,
         data JSONB NOT NULL DEFAULT '{}'
       )
     `);
-    console.log('Tabla site_data verificada/creada');
+    console.log('Tabla site_data OK');
 
-    // Verifica si hay datos
     const { rows } = await client.query('SELECT data FROM site_data WHERE id = 1');
     if (rows.length === 0) {
-      console.log('No hay datos → insertando iniciales...');
+      console.log('Insertando datos iniciales...');
       const initialData = {
         hero: { title: 'DROP #003: CAMISETAS DE ARTISTAS', desc: 'Camisetas únicas inspiradas en artistas como Travis Scott, Kanye West y Quevedo, perfectas para fans del streetwear.' },
         about: {
@@ -115,24 +114,52 @@ async function initDatabase() {
         telegram: { title: 'Únete a Telegram', desc: 'Novedades, descuentos y drops exclusivos.', link: 'https://t.me/+gOPcalQ283ZmMjdk' },
         shirtsTitle: 'Camisetas de Artistas',
         shirts: [
-          { id: 'travis-scott', name: 'Travis Scott', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/jebq36.jpg', desc: 'Silueta con collage de álbumes', vinted1: 'https://vinted.com/items/7129804695', vinted2: 'https://vinted.com/items/7129752813', wallapop: 'https://wallapop.com/item/abc123', photos: ['https://files.catbox.moe/jebq36.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf' }
-          // Añade el resto tú en el panel
+          {
+            id: 'travis-scott', name: 'Travis Scott', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/jebq36.jpg',
+            desc: 'Silueta con collage de álbumes', vinted1: 'https://vinted.com/items/7129804695', vinted2: 'https://vinted.com/items/7129752813',
+            wallapop: 'https://wallapop.com/item/camiseta-travis-scott-inspirada-en-albumes-1177538052', photos: ['https://files.catbox.moe/jebq36.jpg', 'https://files.catbox.moe/ax2bgv.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf'
+          },
+          {
+            id: 'kanye-west', name: 'Kanye West', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/n9gr3b.jpg',
+            desc: 'Silueta icónica de Kanye', vinted1: 'https://vinted.com/items/7129862787', vinted2: 'https://vinted.com/items/7129981776',
+            wallapop: 'https://wallapop.com/item/camiseta-kanye-west-negra-1177553048', photos: ['https://files.catbox.moe/n9gr3b.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf'
+          },
+          {
+            id: 'quevedo', name: 'Quevedo', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/mq4dbc.jpg',
+            desc: 'Estampado con barra censurada', vinted1: 'https://vinted.com/items/7129833371', vinted2: 'https://vinted.com/items/7130620834',
+            wallapop: 'https://wallapop.com/item/camiseta-quevedo-negra-la-ultima-barra-censurada-1177553748', photos: ['https://files.catbox.moe/mq4dbc.jpg'], size: 'L', pdf: 'https://files.catbox.moe/u93uht.pdf'
+          },
+          {
+            id: 'playboi-carti', name: 'Playboi Carti', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/ghb8e4.jpg',
+            desc: 'Estética trap vanguardista', vinted1: 'https://vinted.com/items/7129847714', vinted2: 'https://vinted.com/items/7130320619',
+            wallapop: 'https://wallapop.com/item/playboi-carti-merch-camiseta-negra-1177554656', photos: ['https://files.catbox.moe/ghb8e4.jpg'], size: 'L', pdf: 'https://files.catbox.moe/u93uht.pdf'
+          },
+          {
+            id: 'kendrick-lamar', name: 'Kendrick Lamar', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/sa521h.jpg',
+            desc: 'Diseño minimalista con letras', vinted1: 'https://vinted.com/items/7129831487', vinted2: 'https://vinted.com/items/7130241869',
+            wallapop: 'https://wallapop.com/item/camiseta-kendrick-lamar-negra-1177552441', photos: ['https://files.catbox.moe/sa521h.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf'
+          },
+          {
+            id: 'drake', name: 'Drake', price: '19.99', oldPrice: '24.99', img: 'https://files.catbox.moe/3b9llp.jpg',
+            desc: 'Firma de Drake en blanco', vinted1: 'https://vinted.com/items/7129822256', vinted2: 'https://vinted.com/items/7130074286',
+            wallapop: 'https://wallapop.com/item/camiseta-drake-con-firma-1177551844', photos: ['https://files.catbox.moe/3b9llp.jpg'], size: 'M', pdf: 'https://files.catbox.moe/u93uht.pdf'
+          }
         ],
-        discounts: { oldPrice: '24.99', newPrice: '19.99', validCodes: ['M4S1T','BURRO','DROP003'], title: 'Código de Descuento', desc: 'Ingresa tu código para el drop #003' },
+        discounts: {
+          oldPrice: '24.99', newPrice: '19.99',
+          validCodes: ['M4S1T','BURRO','DROP003','SPRINT','TOP10','VIP2025','#DROP003VIENEDURO','TOPVIBES25','CAST','INFLUENCERS','CHAPARRO','M7D5Z'],
+          title: 'Canjea tu Código de Descuento', desc: 'Ingresa tu código exclusivo para el Drop #003 y completa el formulario para recibir tu descuento.'
+        },
         footer: { year: '2025', ig: 'https://instagram.com/topvibeess', tt: 'https://tiktok.com/@topvibeess', yt: 'https://youtube.com/@topvibeess' }
       };
 
       await client.query('INSERT INTO site_data (id, data) VALUES (1, $1)', [JSON.stringify(initialData)]);
-      console.log('Datos iniciales insertados');
-
       const html = generateSiteHTML(initialData);
       await updateGitHubPages(html);
       console.log('index.html generado por primera vez');
-    } else {
-      console.log('Datos ya existen → listo');
     }
   } catch (err) {
-    console.error('Error en initDatabase:', err);
+    console.error('Error initDatabase:', err);
   }
 }
 
@@ -142,7 +169,6 @@ app.get('/api/data', async (req, res) => {
     const { rows } = await client.query('SELECT data FROM site_data WHERE id = 1');
     res.json(rows[0]?.data || {});
   } catch (err) {
-    console.error('GET error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
@@ -153,14 +179,11 @@ async function updateSection(updateFn, res) {
     const { rows } = await client.query('SELECT data FROM site_data WHERE id = 1');
     const current = rows[0]?.data || {};
     const updated = updateFn(current);
-
     await client.query('INSERT INTO site_data (id, data) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET data = $1', [JSON.stringify(updated)]);
     const html = generateSiteHTML(updated);
     await updateGitHubPages(html);
-
     res.json({ status: 'ok' });
   } catch (err) {
-    console.error('Update error:', err);
     res.status(500).json({ error: 'Update failed' });
   }
 }
@@ -176,7 +199,7 @@ app.post('/api/update-footer', (req, res) => updateSection(c => ({ ...c, footer:
 // === INICIAR ===
 app.listen(PORT, async () => {
   await initDatabase();
-  console.log(`TOPVIBES backend ON en puerto ${PORT}`);
+  console.log(`TOPVIBES backend ON → puerto ${PORT}`);
   console.log(`Panel → https://${OWNER}.github.io/${REPO}/admin.html`);
   console.log(`Sitio → https://${OWNER}.github.io/${REPO}`);
 });
