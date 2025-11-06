@@ -1,40 +1,209 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - TOPVIBES</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Roboto',sans-serif;background:#121212;color:#fff}
-        header{background:#000;padding:20px;text-align:center}.logo{height:40px}
-        .c{max-width:1200px;margin:0 auto;padding:20px}.s{background:#1a1a1a;margin-bottom:30px;padding:20px;border-radius:10px}
-        h2{font-family:'Bebas Neue';font-size:2rem;margin-bottom:15px;text-transform:uppercase}
-        label{display:block;margin-bottom:5px;font-weight:bold}
-        input,textarea{width:100%;padding:10px;margin-bottom:15px;background:#333;color:#fff;border:1px solid #ff3333;border-radius:5px}
-        textarea{height:100px;resize:vertical}button{background:#ff3333;color:#fff;padding:10px 20px;border:none;border-radius:5px;cursor:pointer}
-        button:hover{background:#cc0000}.add{background:#0f0;color:#000}.del{background:#f00;color:#fff;position:absolute;top:10px;right:10px;padding:5px 10px;font-size:0.8rem}
-        .item{background:#222;padding:15px;border-radius:10px;position:relative;margin-bottom:15px}.st{margin-top:10px;font-size:0.9rem}.st.s{color:#0f0}.st.e{color:#f00}
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin TOPVIBES</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+    body{background:#111;color:#fff;padding:20px}
+    h1,h2{margin:15px 0 10px;font-size:1.5rem}
+    input,textarea,button{padding:10px;margin:5px 0;width:100%;border:none;border-radius:5px}
+    input,textarea{background:#222;color:#fff}
+    button{background:#ff3333;color:#fff;cursor:pointer;font-weight:bold}
+    button:hover{background:#cc0000}
+    .section{margin-bottom:30px;padding:15px;background:#1a1a1a;border-radius:8px}
+    .shirts-list{margin-top:10px}
+    .shirt-item{margin:10px 0;padding:10px;background:#222;border-radius:5px}
+    .add-shirt{background:#333;color:#0f0;border:none;cursor:pointer;margin-top:5px}
+    .remove-shirt{background:#900;color:#fff;border:none;cursor:pointer;margin-left:5px}
+    .photo-inputs input{width:calc(100% - 10px);margin:2px}
+    @media(max-width:600px){
+      input,textarea,button{font-size:0.9rem}
+      .section{padding:10px}
+    }
+  </style>
 </head>
 <body>
-    <header><img src="https://files.catbox.moe/c5tx02.jpg" alt="Logo" class="logo"><h1>Panel Admin</h1></header>
-    <div class="c">
-        <div class="s"><h2>Hero</h2><label>Título:</label><input id="t1"><label>Desc:</label><textarea id="d1"></textarea><button onclick="u('hero')">Guardar</button><div id="s1" class="st"></div></div>
-        <div class="s"><h2>About</h2><label>Título:</label><input id="t2"><label>Desc1:</label><textarea id="d2"></textarea><label>Desc2:</label><textarea id="d3"></textarea><button onclick="u('about')">Guardar</button><div id="s2" class="st"></div></div>
-        <div class="s"><h2>Telegram</h2><label>Título:</label><input id="t3"><label>Desc:</label><textarea id="d4"></textarea><label>Link:</label><input id="l1"><button onclick="u('telegram')">Guardar</button><div id="s3" class="st"></div></div>
-        <div class="s"><h2>Camisetas</h2><label>Título:</label><input id="st"><div id="list"></div><button class="add" onclick="a()">+ Camiseta</button><button onclick="u('shirts')">Guardar Todo</button><div id="s4" class="st"></div></div>
-        <div class="s"><h2>Descuentos</h2><label>Antiguo:</label><input id="op" type="number" step="0.01"><label>Nuevo:</label><input id="np" type="number" step="0.01"><label>Códigos (coma):</label><textarea id="vc"></textarea><label>Título:</label><input id="dt"><label>Desc:</label><textarea id="dd"></textarea><button onclick="u('discounts')">Guardar</button><div id="s5" class="st"></div></div>
-        <div class="s"><h2>Footer</h2><label>Año:</label><input id="y" type="number"><label>IG:</label><input id="ig"><label>TT:</label><input id="tt"><label>YT:</label><input id="yt"><button onclick="u('footer')">Guardar</button><div id="s6" class="st"></div></div>
-    </div>
-    <script>
-        const API='https://topvibes.up.railway.app';let shirts=[];
-        async function load(){const r=await fetch(API+'/api/data');const d=await r.json();
-            $('#t1').value=d.hero?.title||'';$('#d1').value=d.hero?.desc||'';$('#t2').value=d.about?.title||'';$('#d2').value=d.about?.desc1||'';$('#d3').value=d.about?.desc2||'';$('#t3').value=d.telegram?.title||'';$('#d4').value=d.telegram?.desc||'';$('#l1').value=d.telegram?.link||'';$('#st').value=d.shirtsTitle||'';shirts=d.shirts||[];render();$('#op').value=d.discounts?.oldPrice||'';$('#np').value=d.discounts?.newPrice||'';$('#vc').value=(d.discounts?.validCodes||[]).join(', ');$('#dt').value=d.discounts?.title||'';$('#dd').value=d.discounts?.desc||'';$('#y').value=d.footer?.year||'';$('#ig').value=d.footer?.ig||'';$('#tt').value=d.footer?.tt||'';$('#yt').value=d.footer?.yt||'';}
-        function render(){const l=document.getElementById('list');l.innerHTML='';shirts.forEach((s,i)=>{const div=document.createElement('div');div.className='item';div.innerHTML=`<button class="del" onclick="shirts.splice(${i},1);render()">X</button><input placeholder="ID" value="${s.id}" data-i="${i}" data-f="id"><input placeholder="Nombre" value="${s.name}" data-i="${i}" data-f="name"><input placeholder="Precio" value="${s.price}" data-i="${i}" data-f="price" type="number" step="0.01"><input placeholder="Antiguo" value="${s.oldPrice}" data-i="${i}" data-f="oldPrice" type="number" step="0.01"><input placeholder="Img" value="${s.img}" data-i="${i}" data-f="img"><textarea placeholder="Desc" data-i="${i}" data-f="desc">${s.desc}</textarea><input placeholder="Vinted1" value="${s.vinted1}" data-i="${i}" data-f="vinted1"><input placeholder="Vinted2" value="${s.vinted2}" data-i="${i}" data-f="vinted2"><input placeholder="Wallapop" value="${s.wallapop}" data-i="${i}" data-f="wallapop"><textarea placeholder="Fotos (coma)" data-i="${i}" data-f="photos">${s.photos?.join(', ')||''}</textarea><input placeholder="Talla" value="${s.size}" data-i="${i}" data-f="size"><input placeholder="PDF" value="${s.pdf}" data-i="${i}" data-f="pdf">`;l.appendChild(div);});}
-        function a(){shirts.push({id:'new-'+Date.now(),name:'',price:'19.99',oldPrice:'24.99',img:'',desc:'',vinted1:'',vinted2:'',wallapop:'',photos:[],size:'',pdf:''});render();}
-        async function u(sec){const st=document.getElementById('s'+(sec==='hero'?1:sec==='about'?2:sec==='telegram'?3:sec==='shirts'?4:sec==='discounts'?5:6));st.textContent='Guardando...';st.className='st';let body={};if(sec==='hero')body={hero:{title:$('#t1').value,desc:$('#d1').value}};else if(sec==='about')body={about:{title:$('#t2').value,desc1:$('#d2').value,desc2:$('#d3').value}};else if(sec==='telegram')body={telegram:{title:$('#t3').value,desc:$('#d4').value,link:$('#l1').value}};else if(sec==='shirts'){const items=document.querySelectorAll('.item');const updated=[];items.forEach(item=>{const s={};item.querySelectorAll('input,textarea').forEach(el=>{const f=el.dataset.f;if(f==='photos')s[f]=el.value.split(',').map(x=>x.trim()).filter(x=>x);else s[f]=el.value;});updated.push(s);});body={shirtsTitle:$('#st').value,shirts:updated};}else if(sec==='discounts')body={discounts:{oldPrice:$('#op').value,newPrice:$('#np').value,validCodes:$('#vc').value.split(',').map(x=>x.trim()),title:$('#dt').value,desc:$('#dd').value}};else if(sec==='footer')body={footer:{year:$('#y').value,ig:$('#ig').value,tt:$('#tt').value,yt:$('#yt').value}};try{const r=await fetch(API+'/api/update-'+sec,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){st.textContent='Subido!';st.className='st s';if(sec==='shirts')shirts=body.shirts||body.shirtsTitle?body.shirts:shirts;load();}else throw 1;}catch{st.textContent='Error';st.className='st e';}}
-        const $=id=>document.getElementById(id);window.onload=()=>{load();setInterval(load,30000);};
-    </script>
+  <h1>ADMIN TOPVIBES</h1>
+
+  <!-- HERO -->
+  <div class="section">
+    <h2>Hero</h2>
+    <input id="heroTitle" placeholder="Título" />
+    <textarea id="heroDesc" placeholder="Descripción" rows="2"></textarea>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="section">
+    <h2>About</h2>
+    <input id="aboutTitle" placeholder="Título" />
+    <textarea id="aboutDesc1" placeholder="Párrafo 1" rows="3"></textarea>
+    <textarea id="aboutDesc2" placeholder="Párrafo 2" rows="3"></textarea>
+  </div>
+
+  <!-- TELEGRAM -->
+  <div class="section">
+    <h2>Telegram</h2>
+    <input id="telegramTitle" placeholder="Título" />
+    <textarea id="telegramDesc" placeholder="Descripción" rows="2"></textarea>
+    <input id="telegramLink" placeholder="Link" />
+  </div>
+
+  <!-- CAMISETAS -->
+  <div class="section">
+    <h2>Camisetas</h2>
+    <input id="shirtsTitle" placeholder="Título de sección" />
+    <div id="shirtsList" class="shirts-list"></div>
+    <button class="add-shirt" onclick="addShirt()">+ Añadir camiseta</button>
+  </div>
+
+  <!-- DESCUENTOS -->
+  <div class="section">
+    <h2>Descuentos</h2>
+    <input id="discountsTitle" placeholder="Título" />
+    <textarea id="discountsDesc" placeholder="Descripción" rows="2"></textarea>
+    <input id="discountsCodes" placeholder="Códigos separados por coma" />
+    <input id="newPrice" placeholder="Precio nuevo (ej: 19.99)" />
+  </div>
+
+  <!-- FOOTER -->
+  <div class="section">
+    <h2>Footer</h2>
+    <input id="footerYear" placeholder="Año" />
+    <input id="footerIg" placeholder="Instagram link" />
+    <input id="footerTt" placeholder="TikTok link" />
+    <input id="footerYt" placeholder="YouTube link" />
+  </div>
+
+  <button onclick="saveAll()">GUARDAR TODO</button>
+  <p id="status" style="margin-top:15px;color:#0f0"></p>
+
+  <script>
+    const API = ''; // Railway despliega en / → vacío
+
+    // CARGAR DATOS AL ABRIR
+    async function loadData() {
+      try {
+        const res = await fetch(API + '/api/data');
+        const data = await res.json();
+
+        // Hero
+        $('#heroTitle').value = data.hero?.title || '';
+        $('#heroDesc').value = data.hero?.desc || '';
+
+        // About
+        $('#aboutTitle').value = data.about?.title || '';
+        $('#aboutDesc1').value = data.about?.desc1 || '';
+        $('#aboutDesc2').value = data.about?.desc2 || '';
+
+        // Telegram
+        $('#telegramTitle').value = data.telegram?.title || '';
+        $('#telegramDesc').value = data.telegram?.desc || '';
+        $('#telegramLink').value = data.telegram?.link || '';
+
+        // Camisetas
+        $('#shirtsTitle').value = data.shirtsTitle || '';
+        const list = $('#shirtsList');
+        list.innerHTML = '';
+        (data.shirts || []).forEach((s, i) => addShirtToList(s, i));
+
+        // Descuentos
+        $('#discountsTitle').value = data.discounts?.title || '';
+        $('#discountsDesc').value = data.discounts?.desc || '';
+        $('#discountsCodes').value = (data.discounts?.validCodes || []).join(', ');
+        $('#newPrice').value = data.discounts?.newPrice || '';
+
+        // Footer
+        $('#footerYear').value = data.footer?.year || '';
+        $('#footerIg').value = data.footer?.ig || '';
+        $('#footerTt').value = data.footer?.tt || '';
+        $('#footerYt').value = data.footer?.yt || '';
+
+        $('#status').textContent = 'Datos cargados';
+      } catch (e) {
+        $('#status').textContent = 'Error al cargar: ' + e.message;
+        $('#status').style.color = '#f00';
+      }
+    }
+
+    // GUARDAR TODO
+    async function saveAll() {
+      const payload = {
+        hero: { title: $('#heroTitle').value, desc: $('#heroDesc').value },
+        about: { title: $('#aboutTitle').value, desc1: $('#aboutDesc1').value, desc2: $('#aboutDesc2').value },
+        telegram: { title: $('#telegramTitle').value, desc: $('#telegramDesc').value, link: $('#telegramLink').value },
+        shirtsTitle: $('#shirtsTitle').value,
+        shirts: Array.from(document.querySelectorAll('.shirt-item')).map(el => ({
+          id: el.dataset.id || Date.now().toString(),
+          name: el.querySelector('.name').value,
+          price: el.querySelector('.price').value,
+          oldPrice: el.querySelector('.oldPrice').value || '24.99',
+          img: el.querySelector('.img').value,
+          desc: el.querySelector('.desc').value,
+          vinted1: el.querySelector('.vinted1').value,
+          vinted2: el.querySelector('.vinted2').value,
+          wallapop: el.querySelector('.wallapop').value,
+          size: el.querySelector('.size').value,
+          pdf: el.querySelector('.pdf').value,
+          photos: el.querySelector('.photos').value.split(',').map(s => s.trim()).filter(Boolean)
+        })),
+        discounts: {
+          title: $('#discountsTitle').value,
+          desc: $('#discountsDesc').value,
+          validCodes: $('#discountsCodes').value.split(',').map(s => s.trim()).filter(Boolean),
+          newPrice: $('#newPrice').value
+        },
+        footer: { year: $('#footerYear').value, ig: $('#footerIg').value, tt: $('#footerTt').value, yt: $('#footerYt').value }
+      };
+
+      try {
+        await fetch(API + '/api/update-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        $('#status').textContent = '¡Guardado! index.html se actualizó en GitHub Pages.';
+        $('#status').style.color = '#0f0';
+      } catch (e) {
+        $('#status').textContent = 'Error: ' + e.message;
+        $('#status').style.color = '#f00';
+      }
+    }
+
+    // CAMISETAS
+    function addShirt(s = {}) {
+      const list = $('#shirtsList');
+      const div = document.createElement('div');
+      div.className = 'shirt-item';
+      div.dataset.id = s.id || Date.now();
+      div.innerHTML = `
+        <input class="name" placeholder="Nombre" value="${s.name||''}" />
+        <input class="price" placeholder="Precio nuevo" value="${s.price||''}" />
+        <input class="oldPrice" placeholder="Precio viejo (opcional)" value="${s.oldPrice||''}" />
+        <input class="img" placeholder="Imagen principal" value="${s.img||''}" />
+        <textarea class="desc" placeholder="Descripción" rows="2">${s.desc||''}</textarea>
+        <input class="vinted1" placeholder="Vinted 1" value="${s.vinted1||''}" />
+        <input class="vinted2" placeholder="Vinted 2" value="${s.vinted2||''}" />
+        <input class="wallapop" placeholder="Wallapop" value="${s.wallapop||''}" />
+        <input class="size" placeholder="Talla" value="${s.size||''}" />
+        <input class="pdf" placeholder="PDF tallas" value="${s.pdf||''}" />
+        <div class="photo-inputs">
+          ${(s.photos||[]).map(p => `<input placeholder="Foto extra" value="${p}" />`).join('')}
+          <input placeholder="Foto extra (añade más)" />
+        </div>
+        <button class="remove-shirt" onclick="this.parentElement.remove()">Eliminar</button>
+      `;
+      list.appendChild(div);
+    }
+
+    function addShirtToList(s, i) { addShirt(s); }
+
+    // UTIL
+    function $(s) { return document.querySelector(s) || document.getElementById(s.replace('#','')); }
+
+    // CARGAR AL INICIO
+    window.onload = loadData;
+  </script>
 </body>
 </html>
