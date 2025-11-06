@@ -80,13 +80,14 @@
   <p id="status" style="margin-top:15px;color:#0f0"></p>
 
   <script>
-    // === URL DEL BACKEND EN RAILWAY (PUERTO 8080) ===
-    const API = 'https://topvibes-production.up.railway.app:8080';
+    // === URL DEL BACKEND SIN PUERTO (Railway usa 443 para HTTPS) ===
+    const API = 'https://topvibes-production.up.railway.app';
 
-    // CARGAR DATOS AL ABRIR
+    // CARGAR DATOS
     async function loadData() {
       try {
         const res = await fetch(API + '/api/data');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
         $('#heroTitle').value = data.hero?.title || '';
@@ -136,7 +137,9 @@
           wallapop: el.querySelector('.wallapop').value,
           size: el.querySelector('.size').value,
           pdf: el.querySelector('.pdf').value,
-          photos: el.querySelector('.photos').value.split(',').map(s => s.trim()).filter(Boolean)
+          photos: Array.from(el.querySelectorAll('.photo-inputs input'))
+            .map(i => i.value.trim())
+            .filter(Boolean)
         })),
         discounts: {
           title: $('#discountsTitle').value,
@@ -148,12 +151,13 @@
       };
 
       try {
-        await fetch(API + '/api/update-all', {
+        const res = await fetch(API + '/api/update-all', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        $('#status').textContent = '¡Guardado! index.html se actualizó.';
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        $('#status').textContent = '¡Guardado! index.html actualizado.';
         $('#status').style.color = '#0f0';
       } catch (e) {
         $('#status').textContent = 'Error: ' + e.message;
@@ -170,7 +174,7 @@
       div.innerHTML = `
         <input class="name" placeholder="Nombre" value="${s.name||''}" />
         <input class="price" placeholder="Precio nuevo" value="${s.price||''}" />
-        <input class="oldPrice" placeholder="Precio viejo (opcional)" value="${s.oldPrice||''}" />
+        <input class="oldPrice" placeholder="Precio viejo" value="${s.oldPrice||''}" />
         <input class="img" placeholder="Imagen principal" value="${s.img||''}" />
         <textarea class="desc" placeholder="Descripción" rows="2">${s.desc||''}</textarea>
         <input class="vinted1" placeholder="Vinted 1" value="${s.vinted1||''}" />
@@ -187,9 +191,9 @@
       list.appendChild(div);
     }
 
-    function addShirtToList(s, i) { addShirt(s); }
+    function addShirtToList(s) { addShirt(s); }
 
-    function $(s) { return document.querySelector(s) || document.getElementById(s.replace('#','')); }
+    function $(s) { return document.getElementById(s.replace('#','')); }
 
     window.onload = loadData;
   </script>
