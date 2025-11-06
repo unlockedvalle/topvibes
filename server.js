@@ -1,8 +1,9 @@
 // server.js - FINAL 100% FUNCIONAL
+// → LEE index.html del proyecto CADA VEZ
+// → REEMPLAZA {{PLACEHOLDERS}} CORRECTAMENTE
 // → GUARDA EN POSTGRESQL
-// → RECARGA index.html CADA VEZ
-// → REEMPLAZA TODOS LOS {{PLACEHOLDERS}}
-// → ADMIN CARGA + GUARDA + ACTUALIZA GITHUB PAGES
+// → ACTUALIZA GITHUB PAGES
+// → ADMIN CARGA + GUARDA + FUNCIONA
 
 const express = require('express');
 const { Client } = require('pg');
@@ -24,7 +25,7 @@ const client = new Client({
 });
 
 client.connect()
-  .then(() => console.log('DB conectada'))
+  .then(() => console.log('PostgreSQL conectado'))
   .catch(err => console.error('Error DB:', err));
 
 // === GITHUB ===
@@ -35,12 +36,15 @@ const BRANCH = process.env.GITHUB_BRANCH || 'main';
 const FILE_PATH = 'index.html';
 const TEMPLATE_PATH = path.join(__dirname, 'index.html');
 
-// === RECARGAR PLANTILLA CADA VEZ ===
+// === RECARGAR index.html CADA VEZ ===
 function loadTemplate() {
   try {
-    return fs.readFileSync(TEMPLATE_PATH, 'utf-8');
+    const content = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
+    console.log(`index.html cargado (longitud: ${content.length} caracteres)`);
+    return content;
   } catch (err) {
-    console.error('ERROR: index.html no encontrado en la raíz del proyecto');
+    console.error('ERROR: index.html NO encontrado en:', TEMPLATE_PATH);
+    console.error('→ Sube index.html a la RAÍZ del repo');
     return '<h1>ERROR: index.html no existe</h1>';
   }
 }
@@ -51,7 +55,7 @@ function generateSiteHTML(data) {
 
   const replace = (key, value) => {
     const regex = new RegExp(`{{${key}}}`, 'g');
-    html = html.replace(regex, value || '');
+    html = html.replace(regex, value !== undefined && value !== null ? value : '');
   };
 
   replace('HERO_TITLE', data.hero?.title);
@@ -96,11 +100,12 @@ async function updateGitHubPages(html) {
       branch: BRANCH
     });
 
-    console.log('index.html ACTUALIZADO en GitHub Pages');
+    console.log('index.html SUBIDO a GitHub Pages');
   } catch (err) {
-    console.error('ERROR GitHub:', err.message);
     if (err.status === 404) {
-      console.error('→ Asegúrate de que index.html existe en la raíz del repo');
+      console.error('ERROR: index.html NO existe en GitHub. Crea uno manualmente.');
+    } else {
+      console.error('GitHub error:', err.message);
     }
   }
 }
@@ -114,19 +119,15 @@ async function initDatabase() {
         data JSONB NOT NULL DEFAULT '{}'
       )
     `);
-    console.log('Tabla site_data creada/existe');
+    console.log('Tabla site_data OK');
 
     const { rows } = await client.query('SELECT data FROM site_data WHERE id = 1');
     if (rows.length === 0) {
       console.log('Insertando datos iniciales...');
       const initialData = {
-        hero: { title: 'DROP #003: CAMISETAS DE ARTISTAS', desc: 'Camisetas únicas inspiradas en artistas como Travis Scott, Kanye West y Quevedo.' },
-        about: {
-          title: '¿Qué es TOPVIBES?',
-          desc1: 'Marca que lanza drops únicos. Nos inspiramos en música, deporte y cultura.',
-          desc2: 'Vendemos en Vinted y Wallapop. Cada drop es exclusivo.'
-        },
-        telegram: { title: 'Únete a Telegram', desc: 'Novedades, descuentos y drops exclusivos.', link: 'https://t.me/+gOPcalQ283ZmMjdk' },
+        hero: { title: 'DROP #003: CAMISETAS DE ARTISTAS', desc: 'Camisetas únicas inspiradas en artistas.' },
+        about: { title: '¿Qué es TOPVIBES?', desc1: 'Marca de drops únicos.', desc2: 'Vendemos en Vinted y Wallapop.' },
+        telegram: { title: 'Únete a Telegram', desc: 'Novedades y descuentos.', link: 'https://t.me/+gOPcalQ283ZmMjdk' },
         shirtsTitle: 'Camisetas de Artistas',
         shirts: [
           {
@@ -135,21 +136,16 @@ async function initDatabase() {
             price: '19.99',
             oldPrice: '24.99',
             img: 'https://files.catbox.moe/jebq36.jpg',
-            desc: 'Silueta con collage de álbumes',
+            desc: 'Silueta con collage',
             vinted1: 'https://vinted.com/items/7129804695',
             vinted2: 'https://vinted.com/items/7129752813',
-            wallapop: 'https://wallapop.com/item/camiseta-travis-scott-1177538052',
-            photos: ['https://files.catbox.moe/jebq36.jpg', 'https://files.catbox.moe/ax2bgv.jpg'],
+            wallapop: 'https://wallapop.com/item/abc123',
+            photos: ['https://files.catbox.moe/jebq36.jpg'],
             size: 'M',
             pdf: 'https://files.catbox.moe/u93uht.pdf'
           }
         ],
-        discounts: {
-          title: 'Canjea tu Código',
-          desc: 'Ingresa tu código exclusivo para el Drop #003.',
-          validCodes: ['M4S1T','BURRO','DROP003','SPRINT','TOP10','VIP2025'],
-          newPrice: '19.99'
-        },
+        discounts: { title: 'Canjea tu Código', desc: 'Ingresa tu código para el drop #003', validCodes: ['DROP003'], newPrice: '19.99' },
         footer: { year: '2025', ig: 'https://instagram.com/topvibeess', tt: 'https://tiktok.com/@topvibeess', yt: 'https://youtube.com/@topvibeess' }
       };
 
@@ -169,43 +165,42 @@ app.get('/api/data', async (req, res) => {
     const { rows } = await client.query('SELECT data FROM site_data WHERE id = 1');
     res.json(rows[0]?.data || {});
   } catch (err) {
-    console.error('GET /api/data error:', err);
+    console.error('GET error:', err);
     res.status(500).json({ error: 'DB error' });
   }
 });
 
-// === UPDATE + DEPLOY (GUARDA EN DB + ACTUALIZA GITHUB) ===
+// === UPDATE + DEPLOY ===
 async function updateSection(updateFn, res) {
   try {
     const { rows } = await client.query('SELECT data FROM site_data WHERE id = 1');
     const current = rows[0]?.data || {};
     const updated = updateFn(current);
 
-    // GUARDA EN POSTGRESQL
+    // GUARDA EN DB
     await client.query(
       'INSERT INTO site_data (id, data) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET data = $1',
       [JSON.stringify(updated)]
     );
     console.log('Datos guardados en PostgreSQL');
 
-    // GENERA Y SUBE index.html
+    // GENERA Y SUBE
     const html = generateSiteHTML(updated);
     await updateGitHubPages(html);
 
-    res.json({ status: 'ok', message: 'Guardado y actualizado' });
+    res.json({ status: 'ok' });
   } catch (err) {
     console.error('Update error:', err);
     res.status(500).json({ error: 'Update failed' });
   }
 }
 
-// === RUTA: GUARDAR TODO ===
 app.post('/api/update-all', (req, res) => updateSection(() => req.body, res));
 
 // === INICIAR ===
 app.listen(PORT, async () => {
   await initDatabase();
-  console.log(`TOPVIBES backend ON → puerto ${PORT}`);
+  console.log(`Backend ON → https://topvibes-production.up.railway.app`);
   console.log(`Panel → https://${OWNER}.github.io/${REPO}/admin.html`);
   console.log(`Sitio → https://${OWNER}.github.io/${REPO}`);
 });
